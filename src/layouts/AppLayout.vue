@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import BottomNav from '@/components/BottomNav.vue'
 import RecordModal from '@/components/RecordModal.vue'
+import RecordCompletionFx from '@/components/RecordCompletionFx.vue'
 import { useRecordModal } from '@/composables/useRecordModal'
 import { useAuth } from '@/composables/useAuth'
 import { useUserProfile } from '@/composables/useUserProfile'
+import { useJellyfishField } from '@/composables/useJellyfishField'
 import { saveDream } from '@/lib/dreamsRepo'
 import type { RecordSubmitPayload } from '@/lib/dreams'
 
@@ -14,6 +17,10 @@ const emit = defineEmits<{
 const { open } = useRecordModal()
 const { user } = useAuth()
 const { profile } = useUserProfile()
+const jellyfishField = useJellyfishField()
+
+const fxVisible = ref(false)
+const fxVariant = ref<'public' | 'private'>('public')
 
 function handleRecordButton() {
   open()
@@ -35,6 +42,13 @@ async function handleSave(payload: RecordSubmitPayload) {
     payload,
   )
 
+  fxVariant.value = payload.visibility === 'anonymous_public' ? 'public' : 'private'
+  fxVisible.value = true
+  jellyfishField?.flashAll()
+  setTimeout(() => {
+    fxVisible.value = false
+  }, 2200)
+
   emit('recorded', { dreamId: result.dreamId, visibility: payload.visibility })
 }
 </script>
@@ -46,5 +60,6 @@ async function handleSave(payload: RecordSubmitPayload) {
     </div>
     <BottomNav :on-record="handleRecordButton" />
     <RecordModal :on-save="handleSave" />
+    <RecordCompletionFx :visible="fxVisible" :variant="fxVariant" />
   </div>
 </template>
