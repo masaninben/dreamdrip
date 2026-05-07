@@ -939,6 +939,18 @@ userReadAnnouncements/{uid_announcementId} {
 26. Firebase セキュリティルール実装・テスト (feat: implement firestore security rules)
 ```
 
+### 📝 開発者の運用方針（実装スキップ）
+
+ステップ 23・24・25（Unit テスト / E2E テスト / Lighthouse・PWA 検証）は、
+**開発者（masaninben）の意向によりコード実装をスキップ** します。
+
+- 理由：これらの検証は手動で実施する方針
+- 実装スコープ：これらのステップに対応するテストコード・スクリプト・CI 設定は追加しない
+- 実行：手動でブラウザ実機 / Lighthouse CLI / 手動 E2E にて開発者が確認
+- フェーズ 4 で実装するのは **21（PWA 化）/ 22（Hosting デプロイ準備）/ 26（セキュリティルール）** のみ
+
+将来的にテストコードを再導入する場合は、別途タスクとして起票してください。
+
 ---
 
 ## Git 運用
