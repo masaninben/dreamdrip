@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useAnnouncements } from '@/composables/useAnnouncements'
 
 interface Props {
   onRecord?: () => void
@@ -8,6 +9,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const route = useRoute()
+const { unreadCount } = useAnnouncements()
 
 type Tab = {
   to: string
@@ -74,7 +76,7 @@ function handleRecord() {
       class="flex flex-col items-center gap-1 py-1 text-[10px] tracking-widest transition"
       :class="activeName === tab.name ? 'text-sky-200' : 'text-sky-100/45 hover:text-sky-100/70'"
     >
-      <span class="block h-5 w-5">
+      <span class="relative block h-5 w-5">
         <svg v-if="tab.icon === 'share'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <circle cx="6" cy="12" r="2.5" />
           <circle cx="18" cy="6" r="2.5" />
@@ -85,6 +87,12 @@ function handleRecord() {
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.3a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9A1.7 1.7 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
         </svg>
+        <span
+          v-if="tab.icon === 'settings' && unreadCount > 0"
+          class="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-500/90 px-1 text-[8px] font-semibold text-white"
+        >
+          {{ unreadCount > 9 ? '9+' : unreadCount }}
+        </span>
       </span>
       <span>{{ tab.label }}</span>
     </RouterLink>
