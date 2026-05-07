@@ -90,6 +90,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ContactView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/settings/about-app',
+    name: 'about-app',
+    component: () => import('@/views/AboutAppView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 export const router = createRouter({
