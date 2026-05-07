@@ -10,3 +10,4 @@ dist-ssr/
 coverage/
 service-account.json
 service-account*.json
+.firebase/

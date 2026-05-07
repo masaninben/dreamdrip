@@ -15,17 +15,29 @@ type Tab = {
   to: string
   name: string
   label: string
-  icon: 'me' | 'map' | 'share' | 'settings'
+  icon: 'home' | 'me' | 'map' | 'settings'
 }
 
 const tabs: Tab[] = [
+  { to: '/home', name: 'home', label: 'ホーム', icon: 'home' },
   { to: '/me', name: 'me', label: '個人', icon: 'me' },
   { to: '/map', name: 'map', label: 'マップ', icon: 'map' },
-  { to: '/share', name: 'share', label: '共有', icon: 'share' },
   { to: '/settings', name: 'settings', label: '設定', icon: 'settings' },
 ]
 
 const activeName = computed(() => route.name)
+const activePath = computed(() => route.path)
+
+function isTabActive(tab: Tab): boolean {
+  if (activeName.value === tab.name) return true
+  // Settings keeps its tab highlighted while inside any /settings/* sub-page
+  // (announcements, account, location, etc.) — those routes have their own
+  // route names so a name-prefix check would miss them.
+  if (tab.name === 'settings' && activePath.value.startsWith('/settings')) {
+    return true
+  }
+  return false
+}
 
 function handleRecord() {
   props.onRecord?.()
@@ -42,12 +54,17 @@ function handleRecord() {
       :key="tab.name"
       :to="tab.to"
       class="flex flex-col items-center gap-1 py-1 text-[10px] tracking-widest transition"
-      :class="activeName === tab.name ? 'text-sky-200' : 'text-sky-100/45 hover:text-sky-100/70'"
+      :class="isTabActive(tab) ? 'text-sky-200' : 'text-sky-100/45 hover:text-sky-100/70'"
     >
       <span class="block h-5 w-5">
         <svg v-if="tab.icon === 'me'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 19c1.5-3.4 4.4-5 7-5s5.5 1.6 7 5" stroke-linecap="round" />
+        </svg>
+        <svg v-else-if="tab.icon === 'home'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M4 11.5 12 4l8 7.5" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M6.5 10v9h11v-9" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M10 19v-5h4v5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <svg v-else-if="tab.icon === 'map'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z" stroke-linejoin="round" />
@@ -74,14 +91,12 @@ function handleRecord() {
       :key="tab.name"
       :to="tab.to"
       class="flex flex-col items-center gap-1 py-1 text-[10px] tracking-widest transition"
-      :class="activeName === tab.name ? 'text-sky-200' : 'text-sky-100/45 hover:text-sky-100/70'"
+      :class="isTabActive(tab) ? 'text-sky-200' : 'text-sky-100/45 hover:text-sky-100/70'"
     >
       <span class="relative block h-5 w-5">
-        <svg v-if="tab.icon === 'share'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-          <circle cx="6" cy="12" r="2.5" />
-          <circle cx="18" cy="6" r="2.5" />
-          <circle cx="18" cy="18" r="2.5" />
-          <path d="m8 11 8-4M8 13l8 4" stroke-linecap="round" />
+        <svg v-if="tab.icon === 'map'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z" stroke-linejoin="round" />
+          <path d="M9 4v14M15 6v14" />
         </svg>
         <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <circle cx="12" cy="12" r="3" />

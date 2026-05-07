@@ -24,6 +24,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.app-shell {
+  padding-top: max(env(safe-area-inset-top), 18px);
+}
+
 @layer utilities {
   .bg-app-gradient {
     background: linear-gradient(

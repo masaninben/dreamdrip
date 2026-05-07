@@ -52,9 +52,18 @@ function open(d: DreamDoc) {
     <main class="flex flex-1 flex-col px-6 py-8">
       <header>
         <p class="text-[11px] tracking-[0.4em] text-sky-100/45">PERSONAL</p>
-        <h2 class="mt-1 text-base font-light tracking-[0.3em] text-sky-100/85">
-          深海に沈む夢たち
-        </h2>
+        <div class="mt-1 flex items-center justify-between gap-3">
+          <h2 class="text-base font-light tracking-[0.3em] text-sky-100/85">
+            深海に沈む夢たち
+          </h2>
+          <button
+            type="button"
+            class="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] tracking-widest text-sky-100/70 transition hover:bg-white/10"
+            @click="router.push({ name: 'share' })"
+          >
+            共有
+          </button>
+        </div>
       </header>
 
       <section class="mt-6 grid grid-cols-2 gap-3">

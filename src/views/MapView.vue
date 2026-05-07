@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { usePublicDreams } from '@/composables/usePublicDreams'
 import { EMOTION_OPTIONS } from '@/lib/dreams'
+import {
+  REGION_COORDINATES,
+  addMonthlyTileLoad,
+  mapProvider,
+  readMonthlyTileLoads,
+} from '@/lib/mapProvider'
 
 const { dreams, loading } = usePublicDreams(200)
 
@@ -10,6 +18,11 @@ type Period = 'today' | 'week' | 'month'
 const period = ref<Period>('today')
 const tagFilter = ref<string | null>(null)
 const emotionFilter = ref<string | null>(null)
+const mapEl = ref<HTMLElement | null>(null)
+const monthlyTileLoads = ref(readMonthlyTileLoads())
+
+let map: L.Map | null = null
+let regionLayer: L.LayerGroup | null = null
 
 function periodCutoff(p: Period): number {
   const now = Date.now()
@@ -59,12 +72,15 @@ const regions = computed(() => {
     .map(([region, g]) => ({
       region,
       count: g.count,
+      coordinates: REGION_COORDINATES[region] ?? null,
       topTags: [...g.tags.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t]) => t),
       topEmotion:
         [...g.emotions.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
     }))
     .sort((a, b) => b.count - a.count)
 })
+
+const regionsWithCoordinates = computed(() => regions.value.filter((r) => r.coordinates))
 
 const popularTags = computed(() => {
   const counts = new Map<string, number>()
@@ -74,10 +90,89 @@ const popularTags = computed(() => {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t)
 })
 
+const providerStatus = computed(() => {
+  if (monthlyTileLoads.value >= mapProvider.criticalMonthlyTileLoads) {
+    return 'critical'
+  }
+  if (monthlyTileLoads.value >= mapProvider.warningMonthlyTileLoads) {
+    return 'warning'
+  }
+  return 'normal'
+})
+
 function clearFilters() {
   tagFilter.value = null
   emotionFilter.value = null
 }
+
+function initMap() {
+  if (!mapEl.value || map) return
+  map = L.map(mapEl.value, {
+    zoomControl: false,
+    attributionControl: true,
+    scrollWheelZoom: false,
+  }).setView([36.2, 138.2], 4)
+
+  L.control.zoom({ position: 'bottomright' }).addTo(map)
+
+  const tiles = L.tileLayer(mapProvider.tileUrl, {
+    attribution: mapProvider.attribution,
+    maxZoom: 18,
+  })
+  tiles.on('tileload', () => {
+    monthlyTileLoads.value = addMonthlyTileLoad()
+  })
+  tiles.addTo(map)
+
+  regionLayer = L.layerGroup().addTo(map)
+  updateMarkers()
+}
+
+function updateMarkers() {
+  if (!map || !regionLayer) return
+  regionLayer.clearLayers()
+
+  for (const r of regionsWithCoordinates.value) {
+    if (!r.coordinates) continue
+    const radius = Math.min(34, 10 + r.count * 3)
+    const marker = L.circleMarker(r.coordinates, {
+      radius,
+      color: '#bae6fd',
+      weight: 1,
+      opacity: 0.9,
+      fillColor: '#38bdf8',
+      fillOpacity: 0.25,
+    })
+    marker.bindPopup(
+      `<strong>${r.region}</strong><br>${r.count} 件` +
+        (r.topTags.length ? `<br>${r.topTags.map((t) => `#${t}`).join(' ')}` : '') +
+        (r.topEmotion ? `<br>${r.topEmotion}` : ''),
+    )
+    marker.addTo(regionLayer)
+  }
+
+  const points = regionsWithCoordinates.value.map((r) => r.coordinates as [number, number])
+  if (points.length > 1) {
+    map.fitBounds(L.latLngBounds(points), { padding: [28, 28], maxZoom: 6 })
+  } else if (points.length === 1) {
+    map.setView(points[0], 6)
+  }
+}
+
+onMounted(async () => {
+  await nextTick()
+  initMap()
+})
+
+watch(regionsWithCoordinates, () => {
+  updateMarkers()
+})
+
+onUnmounted(() => {
+  map?.remove()
+  map = null
+  regionLayer = null
+})
 </script>
 
 <template>
@@ -89,6 +184,22 @@ function clearFilters() {
           世界の夢分布
         </h2>
       </header>
+
+      <section class="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+        <div ref="mapEl" class="dream-map h-[280px] w-full" />
+      </section>
+
+      <section
+        v-if="providerStatus !== 'normal'"
+        class="mt-3 rounded-2xl border px-4 py-3 text-[11px] leading-relaxed"
+        :class="
+          providerStatus === 'critical'
+            ? 'border-rose-300/30 bg-rose-500/10 text-rose-100/80'
+            : 'border-amber-200/30 bg-amber-300/10 text-amber-100/80'
+        "
+      >
+        地図タイルの読み込みが増えています。MapTiler などの専用タイル配信への切り替えを検討してください。
+      </section>
 
       <section class="mt-5 flex gap-1">
         <button
@@ -197,3 +308,42 @@ function clearFilters() {
     </main>
   </AppLayout>
 </template>
+
+<style scoped>
+.dream-map {
+  background: #031125;
+}
+
+:deep(.leaflet-container) {
+  background: #031125;
+  color: #dff4ff;
+  font-family: inherit;
+}
+
+:deep(.leaflet-tile-pane) {
+  filter: saturate(0.65) brightness(0.62) hue-rotate(175deg);
+}
+
+:deep(.leaflet-control-attribution) {
+  background: rgba(2, 3, 10, 0.72);
+  color: rgba(224, 242, 254, 0.7);
+  font-size: 9px;
+}
+
+:deep(.leaflet-control-attribution a) {
+  color: rgba(186, 230, 253, 0.85);
+}
+
+:deep(.leaflet-bar a) {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(2, 3, 10, 0.72);
+  color: rgba(224, 242, 254, 0.9);
+}
+
+:deep(.leaflet-popup-content-wrapper),
+:deep(.leaflet-popup-tip) {
+  background: rgba(2, 3, 10, 0.92);
+  color: rgba(224, 242, 254, 0.95);
+  border: 1px solid rgba(186, 230, 253, 0.18);
+}
+</style>
