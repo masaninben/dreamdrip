@@ -10,7 +10,7 @@ import {
 import { db } from '@/lib/firebase'
 import type { PublicDreamDoc } from '@/types'
 
-export function usePublicDreams(maxItems = 10) {
+export function usePublicDreams(maxItems: number = 10) {
   const dreams = ref<PublicDreamDoc[]>([])
   const loading = ref(true)
 
