@@ -71,7 +71,7 @@ function handleStageTap() {
       </header>
 
       <section
-        class="relative z-10 mt-auto mb-10 px-6"
+        class="absolute inset-x-0 top-[50%] z-10 -translate-y-1/2 px-6"
         @click.stop
       >
         <div v-if="loading && !dreams.length" class="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-6 text-center text-xs text-sky-100/40">
