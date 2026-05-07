@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --c-deep-night: #02030a;
+  --c-deep-blue: #061434;
+  --c-mid-blue: #0a2552;
+  --c-glow: #6db8ff;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  background: var(--c-deep-night);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN', 'Noto Sans JP', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer utilities {
+  .bg-app-gradient {
+    background: linear-gradient(
+      to bottom,
+      #02030a 0%,
+      #061434 35%,
+      #0a2552 70%,
+      #02030a 100%
+    );
+  }
+  .bg-deep-night {
+    background: var(--c-deep-night);
+  }
+  .shadow-glass {
+    box-shadow: 0 0 80px rgba(109, 184, 255, 0.05) inset;
+  }
+}
