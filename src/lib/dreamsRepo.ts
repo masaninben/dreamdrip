@@ -127,6 +127,43 @@ export async function saveDream(
   return { dreamId }
 }
 
+export async function updateDreamContent(
+  dreamId: string,
+  patch: { text: string; emotions: string[]; tags: string[] },
+  isPublic: boolean,
+): Promise<void> {
+  const now = serverTimestamp()
+  const batch = writeBatch(db)
+  batch.set(
+    doc(db, 'dreams', dreamId),
+    {
+      text: patch.text,
+      textLength: patch.text.length,
+      emotions: patch.emotions,
+      tags: patch.tags,
+      updatedAt: now,
+    },
+    { merge: true },
+  )
+  if (isPublic) {
+    batch.set(
+      doc(db, 'publicDreams', dreamId),
+      {
+        textPreview: buildTextPreview(patch.text),
+        emotions: patch.emotions,
+        tags: patch.tags,
+        cardType: decideCardType({
+          text: patch.text,
+          tags: patch.tags,
+          emotions: patch.emotions,
+        }),
+      },
+      { merge: true },
+    )
+  }
+  await batch.commit()
+}
+
 export async function softDeleteDream(dreamId: string, alsoPublic: boolean): Promise<void> {
   const now = serverTimestamp()
   const batch = writeBatch(db)
