@@ -58,9 +58,27 @@ function open(d: DreamDoc) {
           </h2>
           <button
             type="button"
-            class="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] tracking-widest text-sky-100/70 transition hover:bg-white/10"
+            class="group relative inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sky-300/40 bg-gradient-to-b from-sky-300 via-sky-500 to-blue-700 px-4 py-2 text-xs font-medium tracking-wider text-white shadow-lg shadow-sky-500/35 transition active:scale-[0.97]"
             @click="router.push({ name: 'share' })"
           >
+            <span
+              aria-hidden="true"
+              class="absolute inset-0 -z-10 rounded-full bg-sky-400/45 blur-xl opacity-80 group-hover:opacity-100"
+            />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="6" cy="12" r="2.5" />
+              <circle cx="18" cy="6" r="2.5" />
+              <circle cx="18" cy="18" r="2.5" />
+              <path d="m8 11 8-4M8 13l8 4" stroke-linecap="round" />
+            </svg>
             共有
           </button>
         </div>

@@ -134,14 +134,28 @@ function updateMarkers() {
 
   for (const r of regionsWithCoordinates.value) {
     if (!r.coordinates) continue
-    const radius = Math.min(34, 10 + r.count * 3)
+    const radius = Math.min(28, 8 + r.count * 2.4)
+
+    // Outer halo — soft glow, mimics the jellyfish bloom on home.
+    const halo = L.circleMarker(r.coordinates, {
+      radius: radius + 6,
+      color: 'transparent',
+      weight: 0,
+      fillColor: '#7dd3fc',
+      fillOpacity: 0.08,
+      interactive: false,
+    })
+    halo.addTo(regionLayer)
+
+    // Core marker — deep cyan with a crisp edge.
     const marker = L.circleMarker(r.coordinates, {
       radius,
-      color: '#bae6fd',
+      color: '#cbeafd',
       weight: 1,
-      opacity: 0.9,
-      fillColor: '#38bdf8',
-      fillOpacity: 0.25,
+      opacity: 0.85,
+      fillColor: '#3284e3',
+      fillOpacity: 0.45,
+      className: 'dream-marker',
     })
     marker.bindPopup(
       `<strong>${r.region}</strong><br>${r.count} 件` +
@@ -311,39 +325,81 @@ onUnmounted(() => {
 
 <style scoped>
 .dream-map {
-  background: #031125;
+  position: relative;
+  background: radial-gradient(circle at 50% 35%, #0a2552 0%, #04122c 55%, #02030a 100%);
+}
+
+/* Tint the OSM raster so it reads as deep-sea bathymetry rather than a
+   street map. invert + hue-rotate gives a true dark-mode feel; the extra
+   saturation/contrast knobs pull it toward the same blue palette as the
+   home background. */
+:deep(.leaflet-tile-pane) {
+  filter: invert(0.92) hue-rotate(195deg) brightness(0.85) contrast(0.82) saturate(0.55);
+}
+
+/* A subtle inner shadow gives the card edges that "looking down through
+   water" feel and softens the abrupt tile boundary. */
+.dream-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(0, 0, 0, 0) 55%, rgba(2, 3, 10, 0.55) 100%),
+    linear-gradient(to bottom, rgba(2, 3, 10, 0.0), rgba(2, 3, 10, 0.18));
 }
 
 :deep(.leaflet-container) {
-  background: #031125;
+  background: transparent;
   color: #dff4ff;
   font-family: inherit;
 }
 
-:deep(.leaflet-tile-pane) {
-  filter: saturate(0.65) brightness(0.62) hue-rotate(175deg);
+:deep(.dream-marker) {
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.55));
 }
 
 :deep(.leaflet-control-attribution) {
-  background: rgba(2, 3, 10, 0.72);
-  color: rgba(224, 242, 254, 0.7);
+  background: rgba(2, 3, 10, 0.55);
+  color: rgba(224, 242, 254, 0.55);
   font-size: 9px;
+  border-top-left-radius: 6px;
 }
 
 :deep(.leaflet-control-attribution a) {
-  color: rgba(186, 230, 253, 0.85);
+  color: rgba(186, 230, 253, 0.78);
+}
+
+:deep(.leaflet-bar) {
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.5);
 }
 
 :deep(.leaflet-bar a) {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(2, 3, 10, 0.72);
-  color: rgba(224, 242, 254, 0.9);
+  border-color: rgba(186, 230, 253, 0.18);
+  background: rgba(6, 20, 52, 0.78);
+  color: rgba(224, 242, 254, 0.85);
+}
+
+:deep(.leaflet-bar a:hover) {
+  background: rgba(10, 37, 82, 0.92);
 }
 
 :deep(.leaflet-popup-content-wrapper),
 :deep(.leaflet-popup-tip) {
-  background: rgba(2, 3, 10, 0.92);
+  background: rgba(6, 20, 52, 0.94);
   color: rgba(224, 242, 254, 0.95);
-  border: 1px solid rgba(186, 230, 253, 0.18);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.55);
+}
+
+:deep(.leaflet-popup-content) {
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+:deep(.leaflet-popup-content strong) {
+  color: rgb(186 230 253);
+  letter-spacing: 0.06em;
 }
 </style>
