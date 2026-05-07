@@ -3,11 +3,14 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import DeepSeaBackground from '@/components/DeepSeaBackground.vue'
 import FloatingDreamCard from '@/components/FloatingDreamCard.vue'
+import Jellyfish from '@/components/Jellyfish.vue'
 import { provideJellyfishField } from '@/composables/useJellyfishField'
 import { usePublicDreams } from '@/composables/usePublicDreams'
+import { useRecordModal } from '@/composables/useRecordModal'
 
 const { flashAll } = provideJellyfishField()
 const { dreams, loading } = usePublicDreams(10)
+const { open: openRecordModal } = useRecordModal()
 
 const cycleIntervalMs = 3500
 const currentIndex = ref(0)
@@ -76,10 +79,24 @@ function handleStageTap() {
         </div>
         <div
           v-else-if="!dreams.length"
-          class="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-6 text-center text-xs leading-relaxed text-sky-100/45"
+          class="overflow-hidden rounded-3xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-7 text-center"
         >
-          まだ世界に流れている夢がありません。<br />
-          下の「＋」から、最初の一滴を流してみてください。
+          <div class="mx-auto flex w-20 justify-center">
+            <Jellyfish :hue="200" :size="64" :delay="0" :duration="6" />
+          </div>
+          <p class="mt-4 text-sm leading-relaxed text-sky-100/85">
+            まだ世界に夢の波紋が少ないようです。
+          </p>
+          <p class="mt-1 text-xs leading-relaxed text-sky-100/55">
+            最初の一滴を残してみませんか？
+          </p>
+          <button
+            type="button"
+            class="mt-5 w-full rounded-2xl border border-white/15 bg-gradient-to-b from-sky-300 via-sky-500 to-blue-700 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-sky-500/20 transition active:scale-[0.98]"
+            @click.stop="openRecordModal"
+          >
+            ＋ 記録する
+          </button>
         </div>
         <Transition
           v-else
