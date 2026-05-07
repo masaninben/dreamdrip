@@ -96,6 +96,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/AboutAppView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/settings/delete',
+    name: 'delete-account',
+    component: () => import('@/views/DeleteAccountView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 export const router = createRouter({
