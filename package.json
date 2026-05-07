@@ -10,7 +10,8 @@
     "type-check": "vue-tsc --noEmit",
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
-    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes"
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "seed:dreams": "tsx scripts/seedDreams.ts"
   },
   "dependencies": {
     "firebase": "^11.1.0",
@@ -21,8 +22,10 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.4.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "~5.7.2",
     "vite": "^6.0.5",
     "vite-plugin-pwa": "^0.21.1",
