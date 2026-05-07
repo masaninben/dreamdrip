@@ -17,6 +17,8 @@ const items = computed(() => [
   { name: 'location', label: '位置情報設定', to: '/settings/location' },
   { name: 'about-app', label: 'アプリ説明', to: '/settings/about-app' },
   { name: 'contact', label: '問い合わせ', to: '/settings/contact' },
+  { name: 'privacy', label: 'プライバシーポリシー', to: '/privacy' },
+  { name: 'terms', label: '利用規約', to: '/terms' },
   { name: 'delete', label: 'アカウント削除', to: '/settings/delete', destructive: true },
 ])
 </script>
