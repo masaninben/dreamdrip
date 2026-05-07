@@ -2,6 +2,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -92,6 +93,27 @@ export function useAnnouncements() {
     sortedAnnouncements.value.filter((a) => !readIds.value.has(a.id)).length,
   )
 
+  async function ensureWelcomeAnnouncement() {
+    const ref = doc(db, 'announcements', 'welcome')
+    const snap = await getDoc(ref)
+    if (snap.exists()) return
+    await setDoc(ref, {
+      title: 'Dreamdrip へようこそ',
+      body: [
+        'Dreamdrip は、夢を匿名で記録し、世界の夢の傾向を可視化するアプリです。',
+        '',
+        '公開された夢は匿名で表示されます。',
+        'GPS を許可しても緯度経度は保存しません。',
+        '保存するのは市区町村までの粗い位置情報です。',
+        '',
+        '公開したくない夢は、記録時に「自分だけに保存」を選んでください。',
+      ].join('\n'),
+      createdAt: serverTimestamp(),
+      pinned: true,
+      published: true,
+    })
+  }
+
   async function markAsRead(announcementId: string) {
     if (!user.value) return
     if (readIds.value.has(announcementId)) return
@@ -109,5 +131,6 @@ export function useAnnouncements() {
     unreadCount,
     announcementsLoaded,
     markAsRead,
+    ensureWelcomeAnnouncement,
   }
 }
