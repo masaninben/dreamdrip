@@ -26,7 +26,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
-import { Timestamp, getFirestore } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore'
+
+import { WELCOME_ANNOUNCEMENT } from '../src/lib/welcomeAnnouncement'
 
 // --------------------------- credentials -----------------------------------
 
@@ -310,6 +312,23 @@ function buildDream() {
   }
 }
 
+async function upsertWelcomeAnnouncement() {
+  const db = getFirestore()
+  const ref = db.collection('announcements').doc('welcome')
+  const snap = await ref.get()
+  const payload: Record<string, unknown> = {
+    title: WELCOME_ANNOUNCEMENT.title,
+    body: WELCOME_ANNOUNCEMENT.body,
+    pinned: true,
+    published: true,
+  }
+  if (!snap.exists) {
+    payload.createdAt = FieldValue.serverTimestamp()
+  }
+  await ref.set(payload, { merge: true })
+  console.log(`  ${snap.exists ? 'updated' : 'created'} announcements/welcome`)
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const countArgIdx = args.indexOf('--count')
@@ -319,6 +338,9 @@ async function main() {
   initializeApp(buildAppOptions())
   const db = getFirestore()
   const colRef = db.collection('publicDreams')
+
+  console.log('Upserting welcome announcement...')
+  await upsertWelcomeAnnouncement()
 
   console.log(`Seeding ${count} dreams into publicDreams ...`)
 
