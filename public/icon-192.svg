@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#0a2552" />
+      <stop offset="60%" stop-color="#040e26" />
+      <stop offset="100%" stop-color="#02030a" />
+    </radialGradient>
+    <radialGradient id="bell" cx="50%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="rgba(220,240,255,0.95)" />
+      <stop offset="55%" stop-color="rgba(120,180,255,0.65)" />
+      <stop offset="100%" stop-color="rgba(70,130,210,0.05)" />
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="40%" r="40%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.95)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+    </radialGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)" />
+  <g transform="translate(96 96)">
+    <g transform="translate(-50 -56)">
+      <path
+        d="M50 10 C20 10 10 40 16 60 C20 72 30 70 50 70 C70 70 80 72 84 60 C90 40 80 10 50 10 Z"
+        fill="url(#bell)"
+      />
+      <ellipse cx="50" cy="40" rx="22" ry="18" fill="url(#core)" />
+      <g stroke="rgba(160,210,255,0.55)" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M30 66 q-3 14 2 26 q-5 10 1 24" />
+        <path d="M40 70 q-2 16 4 30 q-6 12 0 26" />
+        <path d="M50 70 q0 18 3 32 q-3 14 1 28" />
+        <path d="M60 70 q4 16 0 30 q5 12 -1 26" />
+        <path d="M70 66 q5 14 -1 28 q4 10 -2 24" />
+      </g>
+    </g>
+  </g>
+</svg>
