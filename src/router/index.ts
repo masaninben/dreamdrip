@@ -20,6 +20,36 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/OnboardingLocationView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/home',
+    name: 'home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/me',
+    name: 'me',
+    component: () => import('@/views/PersonalView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/map',
+    name: 'map',
+    component: () => import('@/views/MapView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/share',
+    name: 'share',
+    component: () => import('@/views/ShareView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/views/SettingsView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 export const router = createRouter({
