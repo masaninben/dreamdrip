@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/dreams/:id',
+    name: 'dream-detail',
+    component: () => import('@/views/DreamDetailView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/map',
     name: 'map',
     component: () => import('@/views/MapView.vue'),
