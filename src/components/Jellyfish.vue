@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useJellyfishField } from '@/composables/useJellyfishField'
 
 interface Props {
   size?: number
@@ -16,12 +17,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const flashing = ref(false)
 const id = `jelly-${Math.random().toString(36).slice(2, 8)}`
+const field = useJellyfishField()
 
 function flash() {
   flashing.value = true
   setTimeout(() => {
     flashing.value = false
   }, 700)
+}
+
+if (field) {
+  watch(field.flashTick, () => {
+    flash()
+  })
 }
 
 defineExpose({ flash })

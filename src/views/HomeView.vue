@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import DeepSeaBackground from '@/components/DeepSeaBackground.vue'
+import { provideJellyfishField } from '@/composables/useJellyfishField'
+
+const { flashAll } = provideJellyfishField()
 </script>
 
 <template>
   <AppLayout>
-    <main class="relative flex flex-1 flex-col overflow-hidden">
+    <main class="relative flex flex-1 flex-col overflow-hidden" @click="flashAll">
       <DeepSeaBackground />
 
       <header class="relative z-10 px-6 pt-10 text-center">
