@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, readonly, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -36,8 +36,8 @@ export function useAuth() {
   }
 
   return {
-    user: readonly(currentUser),
-    authReady: readonly(authReady),
+    user: currentUser,
+    authReady,
     signInWithGoogle,
     signOutUser,
   }
