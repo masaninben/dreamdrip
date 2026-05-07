@@ -25,6 +25,16 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresGuest: true },
   },
   {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/views/PrivacyPolicyView.vue'),
+  },
+  {
+    path: '/terms',
+    name: 'terms',
+    component: () => import('@/views/TermsView.vue'),
+  },
+  {
     path: '/onboarding/location',
     name: 'onboarding-location',
     component: () => import('@/views/OnboardingLocationView.vue'),
