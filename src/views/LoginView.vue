@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import LegalFooter from '@/components/LegalFooter.vue'
 
 const router = useRouter()
 const { signInWithGoogle } = useAuth()
@@ -71,6 +72,8 @@ async function handleSignIn() {
       <p class="text-center text-[11px] tracking-wider text-sky-100/40">
         ログインで利用規約に同意したものとみなします
       </p>
+
+      <LegalFooter />
     </div>
   </main>
 </template>

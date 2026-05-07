@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import DeepSeaBackground from '@/components/DeepSeaBackground.vue'
+import LegalFooter from '@/components/LegalFooter.vue'
 
 const router = useRouter()
 
@@ -47,6 +48,8 @@ function goToLogin() {
       >
         Google でログイン
       </button>
+
+      <LegalFooter />
     </div>
   </main>
 </template>
