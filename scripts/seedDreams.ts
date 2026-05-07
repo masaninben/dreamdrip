@@ -23,34 +23,10 @@
  * auto-generated id). Re-running adds another batch of seeds.
  */
 
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore'
 
 import { WELCOME_ANNOUNCEMENT } from '../src/lib/welcomeAnnouncement'
-
-// --------------------------- credentials -----------------------------------
-
-const SERVICE_ACCOUNT_PATH = resolve(process.cwd(), 'service-account.json')
-
-function buildAppOptions() {
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    return { credential: applicationDefault() }
-  }
-  if (existsSync(SERVICE_ACCOUNT_PATH)) {
-    const json = JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'))
-    return { credential: cert(json), projectId: json.project_id as string }
-  }
-  console.error(
-    'Missing service account credentials.\n' +
-      'Either set GOOGLE_APPLICATION_CREDENTIALS, or save the service\n' +
-      'account JSON as ./service-account.json (gitignored).\n' +
-      'Firebase Console → Project Settings → Service Accounts →\n' +
-      '"Generate new private key" downloads the JSON for you.',
-  )
-  process.exit(2)
-}
+import { initAdminApp } from './_adminApp'
 
 const SEED_USER_ID_HASH = 'seed_dreamer_001'
 const BATCH_LIMIT = 400
@@ -335,7 +311,7 @@ async function main() {
   const count =
     countArgIdx >= 0 && args[countArgIdx + 1] ? Number(args[countArgIdx + 1]) : 200
 
-  initializeApp(buildAppOptions())
+  initAdminApp()
   const db = getFirestore()
   const colRef = db.collection('publicDreams')
 

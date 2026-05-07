@@ -11,7 +11,8 @@
     "deploy": "npm run build && firebase deploy",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
-    "seed:dreams": "tsx scripts/seedDreams.ts"
+    "seed:dreams": "tsx scripts/seedDreams.ts",
+    "seed:cleanup": "tsx scripts/cleanupSeeds.ts"
   },
   "dependencies": {
     "firebase": "^11.1.0",
