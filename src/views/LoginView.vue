@@ -15,7 +15,7 @@ async function handleSignIn() {
   isSubmitting.value = true
   try {
     await signInWithGoogle()
-    router.replace({ name: 'onboarding-location' })
+    router.replace({ name: 'home' })
   } catch (error) {
     errorMessage.value =
       error instanceof Error
