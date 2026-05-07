@@ -6,51 +6,48 @@
  * bulk-deleted later without affecting real user posts.
  *
  * Auth model
- *   This script signs in via Anonymous Auth and writes through the regular
- *   Firebase Web SDK. The current Firestore rules only require an
- *   authenticated user with a non-empty `userIdHash` payload, so anonymous
- *   sessions are sufficient.
+ *   This script uses the Firebase Admin SDK, which bypasses Firestore
+ *   security rules. It needs a service account key for the project.
  *
  * Prerequisites
- *   1. Firebase Console → Authentication → Sign-in method → enable Anonymous
- *   2. `.env.local` populated with the same VITE_FIREBASE_* values used by
- *      the app
- *   3. `npm install`
+ *   1. Firebase Console → Project Settings → Service Accounts →
+ *      "Generate new private key". Save the JSON as
+ *      `./service-account.json` (gitignored), or anywhere on disk and set
+ *      GOOGLE_APPLICATION_CREDENTIALS to its path.
+ *   2. `npm install`
  *
  * Run
  *   npm run seed:dreams [-- --count 200]
  *
- * The script is idempotent only in the sense that it never overwrites
- * existing docs (each insert uses an auto-generated id). Re-running adds
- * another batch of seeds.
+ * The script never overwrites existing docs (each insert uses an
+ * auto-generated id). Re-running adds another batch of seeds.
  */
 
-import { config as loadEnv } from 'dotenv'
-import { initializeApp } from 'firebase/app'
-import { getAuth, signInAnonymously } from 'firebase/auth'
-import {
-  Timestamp,
-  collection,
-  doc,
-  getFirestore,
-  writeBatch,
-} from 'firebase/firestore'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { applicationDefault, cert, initializeApp } from 'firebase-admin/app'
+import { Timestamp, getFirestore } from 'firebase-admin/firestore'
 
-loadEnv({ path: '.env.local' })
+// --------------------------- credentials -----------------------------------
 
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY!,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID!,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET!,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID!,
-  appId: process.env.VITE_FIREBASE_APP_ID!,
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID,
-}
+const SERVICE_ACCOUNT_PATH = resolve(process.cwd(), 'service-account.json')
 
-if (!firebaseConfig.projectId) {
-  console.error('Missing VITE_FIREBASE_* env vars. Populate .env.local first.')
-  process.exit(1)
+function buildAppOptions() {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return { credential: applicationDefault() }
+  }
+  if (existsSync(SERVICE_ACCOUNT_PATH)) {
+    const json = JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'))
+    return { credential: cert(json), projectId: json.project_id as string }
+  }
+  console.error(
+    'Missing service account credentials.\n' +
+      'Either set GOOGLE_APPLICATION_CREDENTIALS, or save the service\n' +
+      'account JSON as ./service-account.json (gitignored).\n' +
+      'Firebase Console → Project Settings → Service Accounts →\n' +
+      '"Generate new private key" downloads the JSON for you.',
+  )
+  process.exit(2)
 }
 
 const SEED_USER_ID_HASH = 'seed_dreamer_001'
@@ -319,33 +316,20 @@ async function main() {
   const count =
     countArgIdx >= 0 && args[countArgIdx + 1] ? Number(args[countArgIdx + 1]) : 200
 
-  const app = initializeApp(firebaseConfig)
-  const auth = getAuth(app)
-  const db = getFirestore(app)
+  initializeApp(buildAppOptions())
+  const db = getFirestore()
+  const colRef = db.collection('publicDreams')
 
-  console.log('Signing in anonymously...')
-  try {
-    await signInAnonymously(auth)
-  } catch (error) {
-    console.error('Anonymous sign-in failed.')
-    console.error(
-      'Open Firebase Console → Authentication → Sign-in method, enable Anonymous, then retry.',
-    )
-    console.error(error)
-    process.exit(2)
-  }
-
-  const colRef = collection(db, 'publicDreams')
   console.log(`Seeding ${count} dreams into publicDreams ...`)
 
   let written = 0
   while (written < count) {
     const remaining = count - written
     const batchSize = Math.min(BATCH_LIMIT, remaining)
-    const batch = writeBatch(db)
+    const batch = db.batch()
 
     for (let i = 0; i < batchSize; i += 1) {
-      const ref = doc(colRef)
+      const ref = colRef.doc()
       const data = buildDream()
       batch.set(ref, {
         dreamId: ref.id,
