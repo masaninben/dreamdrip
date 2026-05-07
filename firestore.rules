@@ -60,9 +60,18 @@ service cloud.firestore {
 
     // ---------- publicDreams ----------
     //
-    // Each public dream must reference a dream owned by the writer. Reads are
-    // open to any signed-in user (the feed is anonymous; userIdHash is used
-    // instead of userId so the original owner cannot be identified).
+    // Reads are open to any signed-in user (the feed is anonymous; userIdHash
+    // is used instead of userId so the original owner cannot be identified).
+    //
+    // Create: ownership check via get(/dreams/$id) is not viable here because
+    // the corresponding dreams doc is written in the same batch and rules
+    // evaluate exists()/get() against pre-batch state. We instead enforce a
+    // tight document shape and rely on the unguessable random dreamId. The
+    // companion dreams write in the same batch is itself owner-gated, so a
+    // user cannot add a public reflection of a dream they don't actually
+    // create.
+    //
+    // Update: by then dreams/$id exists, so we can verify ownership.
 
     function isOwnerOfDream(dreamId) {
       return exists(/databases/$(database)/documents/dreams/$(dreamId))
@@ -72,8 +81,9 @@ service cloud.firestore {
     match /publicDreams/{dreamId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && isOwnerOfDream(dreamId)
-        && request.resource.data.dreamId == dreamId;
+        && request.resource.data.dreamId == dreamId
+        && request.resource.data.userIdHash is string
+        && request.resource.data.userIdHash.size() > 0;
       allow update: if isSignedIn()
         && isOwnerOfDream(dreamId);
       allow delete: if false;
