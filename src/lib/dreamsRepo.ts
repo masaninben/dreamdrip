@@ -117,7 +117,6 @@ export async function saveDream(
         name: tag,
         count: increment(1),
         lastUsedAt: now,
-        createdAt: now,
       },
       { merge: true },
     )

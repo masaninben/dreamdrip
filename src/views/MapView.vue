@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/layouts/AppLayout.vue'
-import { usePublicDreams } from '@/composables/usePublicDreams'
+import { usePublicDreamsOnce } from '@/composables/usePublicDreamsOnce'
 import { EMOTION_OPTIONS } from '@/lib/dreams'
 import {
   REGION_COORDINATES,
@@ -12,7 +12,7 @@ import {
   readMonthlyTileLoads,
 } from '@/lib/mapProvider'
 
-const { dreams, loading } = usePublicDreams(200)
+const { dreams, loading, load } = usePublicDreamsOnce(80)
 
 type Period = 'today' | 'week' | 'month'
 const period = ref<Period>('today')
@@ -176,6 +176,7 @@ function updateMarkers() {
 onMounted(async () => {
   await nextTick()
   initMap()
+  await load()
 })
 
 watch(regionsWithCoordinates, () => {

@@ -29,8 +29,39 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(allowedKeys);
     }
 
-    function isPositiveCount() {
-      return request.resource.data.count is number || request.resource.data.count == null;
+    function optionalString(value, maxLength) {
+      return value == null || (value is string && value.size() <= maxLength);
+    }
+
+    function isStringArray(value, maxItems, maxLength) {
+      return value is list
+        && value.size() <= maxItems
+        && (value.size() < 1 || (value[0] is string && value[0].size() <= maxLength))
+        && (value.size() < 2 || (value[1] is string && value[1].size() <= maxLength))
+        && (value.size() < 3 || (value[2] is string && value[2].size() <= maxLength))
+        && (value.size() < 4 || (value[3] is string && value[3].size() <= maxLength))
+        && (value.size() < 5 || (value[4] is string && value[4].size() <= maxLength))
+        && (value.size() < 6 || (value[5] is string && value[5].size() <= maxLength))
+        && (value.size() < 7 || (value[6] is string && value[6].size() <= maxLength))
+        && (value.size() < 8 || (value[7] is string && value[7].size() <= maxLength))
+        && (value.size() < 9 || (value[8] is string && value[8].size() <= maxLength))
+        && (value.size() < 10 || (value[9] is string && value[9].size() <= maxLength));
+    }
+
+    function isLocationPrecision(value) {
+      return value in ['city', 'region'];
+    }
+
+    function isLocationMode(value) {
+      return value in ['gps', 'manual_city', 'region_only'];
+    }
+
+    function isCardType(value) {
+      return value in ['text', 'tags', 'emotion', 'fragment'];
+    }
+
+    function isVisibility(value) {
+      return value in ['private', 'anonymous_public'];
     }
 
     // ---------- users ----------
@@ -38,9 +69,50 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSelf(uid);
       allow create: if isSelf(uid)
-        && request.resource.data.uid == uid;
+        && request.resource.data.uid == uid
+        && incomingHasOnly([
+          'uid',
+          'displayName',
+          'email',
+          'photoURL',
+          'createdAt',
+          'updatedAt',
+          'lastLoginAt',
+          'onboardingCompleted',
+          'locationMode',
+          'locationPrecision',
+          'country',
+          'region',
+          'city',
+          'defaultVisibility',
+          'deletedAt'
+        ])
+        && request.resource.data.onboardingCompleted == false
+        && request.resource.data.defaultVisibility == 'anonymous_public'
+        && request.resource.data.deletedAt == null;
       allow update: if isSelf(uid)
-        && request.resource.data.uid == uid;
+        && request.resource.data.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastLoginAt',
+          'onboardingCompleted',
+          'locationMode',
+          'locationPrecision',
+          'country',
+          'region',
+          'city',
+          'updatedAt',
+          'deletedAt'
+        ])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['locationMode'])
+          || isLocationMode(request.resource.data.locationMode))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['locationPrecision'])
+          || isLocationPrecision(request.resource.data.locationPrecision))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['country'])
+          || optionalString(request.resource.data.country, 2))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['region'])
+          || optionalString(request.resource.data.region, 30))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['city'])
+          || optionalString(request.resource.data.city, 30));
       allow delete: if false;
     }
 
@@ -51,10 +123,35 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.id == dreamId;
+        && request.resource.data.id == dreamId
+        && request.resource.data.visibility in ['private', 'anonymous_public']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 200
+        && request.resource.data.textLength == request.resource.data.text.size()
+        && isStringArray(request.resource.data.emotions, 9, 12)
+        && isStringArray(request.resource.data.tags, 10, 20);
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'text',
+          'textLength',
+          'emotions',
+          'tags',
+          'visibility',
+          'updatedAt',
+          'deletedAt'
+        ])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility'])
+          || isVisibility(request.resource.data.visibility))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['text'])
+          || (request.resource.data.text is string && request.resource.data.text.size() <= 200))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['text', 'textLength'])
+          || request.resource.data.textLength == request.resource.data.text.size())
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['emotions'])
+          || isStringArray(request.resource.data.emotions, 9, 12))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tags'])
+          || isStringArray(request.resource.data.tags, 10, 20));
       allow delete: if false; // soft delete via update only
     }
 
@@ -78,14 +175,73 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/dreams/$(dreamId)).data.userId == request.auth.uid;
     }
 
-    match /publicDreams/{dreamId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn()
+    function willOwnDream(dreamId) {
+      return existsAfter(/databases/$(database)/documents/dreams/$(dreamId))
+        && getAfter(/databases/$(database)/documents/dreams/$(dreamId)).data.userId == request.auth.uid;
+    }
+
+    function isPublicDreamShape(dreamId) {
+      return incomingHasOnly([
+          'dreamId',
+          'userIdHash',
+          'textPreview',
+          'emotions',
+          'tags',
+          'dreamDate',
+          'recordedAt',
+          'country',
+          'region',
+          'city',
+          'locationPrecision',
+          'cardType',
+          'deletedAt'
+        ])
         && request.resource.data.dreamId == dreamId
         && request.resource.data.userIdHash is string
-        && request.resource.data.userIdHash.size() > 0;
+        && request.resource.data.userIdHash.size() > 0
+        && request.resource.data.userIdHash.size() <= 80
+        && request.resource.data.textPreview is string
+        && request.resource.data.textPreview.size() <= 60
+        && isStringArray(request.resource.data.emotions, 9, 12)
+        && isStringArray(request.resource.data.tags, 10, 20)
+        && request.resource.data.dreamDate is string
+        && request.resource.data.dreamDate.size() == 10
+        && optionalString(request.resource.data.country, 2)
+        && optionalString(request.resource.data.region, 30)
+        && optionalString(request.resource.data.city, 30)
+        && isLocationPrecision(request.resource.data.locationPrecision)
+        && isCardType(request.resource.data.cardType)
+        && request.resource.data.deletedAt == null;
+    }
+
+    match /publicDreams/{dreamId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn()
+        && request.query.limit != null
+        && request.query.limit <= 100;
+      allow create: if isSignedIn()
+        && willOwnDream(dreamId)
+        && getAfter(/databases/$(database)/documents/dreams/$(dreamId)).data.visibility == 'anonymous_public'
+        && isPublicDreamShape(dreamId);
       allow update: if isSignedIn()
-        && isOwnerOfDream(dreamId);
+        && isOwnerOfDream(dreamId)
+        && request.resource.data.dreamId == dreamId
+        && request.resource.data.userIdHash == resource.data.userIdHash
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'textPreview',
+          'emotions',
+          'tags',
+          'cardType',
+          'deletedAt'
+        ])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['textPreview'])
+          || (request.resource.data.textPreview is string && request.resource.data.textPreview.size() <= 60))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['emotions'])
+          || isStringArray(request.resource.data.emotions, 9, 12))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tags'])
+          || isStringArray(request.resource.data.tags, 10, 20))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cardType'])
+          || isCardType(request.resource.data.cardType));
       allow delete: if false;
     }
 
@@ -96,10 +252,16 @@ service cloud.firestore {
 
     match /tags/{tagName} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn()
-        && incomingHasOnly(['name', 'count', 'lastUsedAt', 'createdAt'])
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['name', 'count', 'lastUsedAt', 'createdAt'])
         && request.resource.data.name == tagName
-        && isPositiveCount();
+        && request.resource.data.count == 1;
+      allow update: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['name', 'count', 'lastUsedAt', 'createdAt'])
+        && request.resource.data.name == tagName
+        && (!request.resource.data.keys().hasAny(['createdAt'])
+          || request.resource.data.createdAt == resource.data.createdAt)
+        && request.resource.data.count == resource.data.count + 1;
       allow delete: if false;
     }
 
@@ -112,10 +274,7 @@ service cloud.firestore {
 
     match /announcements/{announcementId} {
       allow read: if isSignedIn() && resource.data.published == true;
-      allow create: if isSignedIn()
-        && announcementId == 'welcome'
-        && request.resource.data.published == true;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     // ---------- userReadAnnouncements ----------
