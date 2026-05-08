@@ -16,10 +16,13 @@ const { dreams, loading, load } = usePublicDreamsOnce(80)
 
 type Period = 'today' | 'week' | 'month'
 const period = ref<Period>('today')
-const tagFilter = ref<string | null>(null)
+const tagFilter = ref<string>('')
+const regionFilter = ref<string>('')
 const emotionFilter = ref<string | null>(null)
 const mapEl = ref<HTMLElement | null>(null)
 const monthlyTileLoads = ref(readMonthlyTileLoads())
+
+const REGION_DISPLAY_LIMIT = 10
 
 let map: L.Map | null = null
 let regionLayer: L.LayerGroup | null = null
@@ -43,12 +46,25 @@ function recordedAtMs(d: { recordedAt?: { toMillis?: () => number } }): number {
 
 const filtered = computed(() => {
   const cutoff = periodCutoff(period.value)
+  const tagQ = tagFilter.value.trim()
+  const region = regionFilter.value
   return dreams.value.filter((d) => {
     if (recordedAtMs(d) < cutoff) return false
-    if (tagFilter.value && !d.tags?.includes(tagFilter.value)) return false
+    if (region && d.region !== region) return false
+    if (tagQ && !(d.tags ?? []).some((t) => t.includes(tagQ))) return false
     if (emotionFilter.value && !d.emotions?.includes(emotionFilter.value)) return false
     return true
   })
+})
+
+const availableRegions = computed(() => {
+  // Built from the full loaded set so users can dial in any region that has
+  // ever shown up, not just regions that survive the current period filter.
+  const set = new Set<string>()
+  for (const d of dreams.value) {
+    if (d.region) set.add(d.region)
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, 'ja'))
 })
 
 const regions = computed(() => {
@@ -90,6 +106,14 @@ const popularTags = computed(() => {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t)
 })
 
+const regionsTop = computed(() => regions.value.slice(0, REGION_DISPLAY_LIMIT))
+const regionsHiddenCount = computed(() =>
+  Math.max(0, regions.value.length - REGION_DISPLAY_LIMIT),
+)
+const hasActiveFilter = computed(
+  () => !!tagFilter.value.trim() || !!regionFilter.value || !!emotionFilter.value,
+)
+
 const providerStatus = computed(() => {
   if (monthlyTileLoads.value >= mapProvider.criticalMonthlyTileLoads) {
     return 'critical'
@@ -101,8 +125,13 @@ const providerStatus = computed(() => {
 })
 
 function clearFilters() {
-  tagFilter.value = null
+  tagFilter.value = ''
+  regionFilter.value = ''
   emotionFilter.value = null
+}
+
+function toggleTagChip(t: string) {
+  tagFilter.value = tagFilter.value === t ? '' : t
 }
 
 function initMap() {
@@ -233,9 +262,31 @@ onUnmounted(() => {
         </button>
       </section>
 
-      <section v-if="popularTags.length" class="mt-4">
+      <section class="mt-4">
+        <p class="text-[10px] tracking-widest text-sky-100/45">都道府県</p>
+        <div class="relative mt-2">
+          <select
+            v-model="regionFilter"
+            class="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 py-2 pr-9 text-sm text-sky-100/90 focus:border-sky-300/60 focus:outline-none"
+          >
+            <option value="">すべての地域</option>
+            <option v-for="r in availableRegions" :key="r" :value="r">{{ r }}</option>
+          </select>
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-sky-100/40">▾</span>
+        </div>
+      </section>
+
+      <section class="mt-4">
         <p class="text-[10px] tracking-widest text-sky-100/45">タグで絞り込み</p>
-        <div class="mt-2 flex flex-wrap gap-1.5">
+        <div class="relative mt-2">
+          <input
+            v-model="tagFilter"
+            type="search"
+            placeholder="# タグを検索（例：海）"
+            class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-sky-100/90 placeholder:text-sky-100/30 focus:border-sky-300/60 focus:outline-none"
+          />
+        </div>
+        <div v-if="popularTags.length" class="mt-2 flex flex-wrap gap-1.5">
           <button
             v-for="t in popularTags"
             :key="t"
@@ -246,7 +297,7 @@ onUnmounted(() => {
                 ? 'border-sky-300/60 bg-sky-400/15 text-sky-100'
                 : 'border-white/10 bg-white/5 text-sky-100/55 hover:bg-white/10'
             "
-            @click="tagFilter = tagFilter === t ? null : t"
+            @click="toggleTagChip(t)"
           >
             #{{ t }}
           </button>
@@ -274,7 +325,7 @@ onUnmounted(() => {
       </section>
 
       <button
-        v-if="tagFilter || emotionFilter"
+        v-if="hasActiveFilter"
         type="button"
         class="mt-4 self-end text-[11px] tracking-wider text-sky-200/70 transition hover:text-sky-200"
         @click="clearFilters"
@@ -294,8 +345,15 @@ onUnmounted(() => {
         </div>
 
         <div v-else class="space-y-2">
+          <p class="text-[10px] tracking-[0.4em] text-sky-100/45">
+            上位 {{ regionsTop.length }} 地域
+            <span v-if="regionsHiddenCount" class="ml-1 text-sky-100/35">
+              （他に {{ regionsHiddenCount }} 地域）
+            </span>
+          </p>
+
           <article
-            v-for="r in regions"
+            v-for="r in regionsTop"
             :key="r.region"
             class="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
           >
@@ -318,6 +376,13 @@ onUnmounted(() => {
               多い感情：{{ r.topEmotion }}
             </p>
           </article>
+
+          <p
+            v-if="regionsHiddenCount"
+            class="pt-2 text-center text-[11px] tracking-wider text-sky-100/40"
+          >
+            さらに絞り込むと該当地域が見えやすくなります
+          </p>
         </div>
       </section>
     </main>

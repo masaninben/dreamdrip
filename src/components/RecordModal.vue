@@ -114,7 +114,7 @@ async function submit() {
   >
     <div
       v-if="isOpen"
-      class="absolute inset-0 z-40 flex items-end justify-center bg-black/60 backdrop-blur-md"
+      class="absolute inset-0 z-[1100] flex items-end justify-center bg-black/60 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       @click.self="close"

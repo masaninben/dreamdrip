@@ -23,7 +23,7 @@ const caption = computed(() =>
   >
     <div
       v-if="visible"
-      class="pointer-events-none absolute inset-0 z-50 overflow-hidden"
+      class="pointer-events-none absolute inset-0 z-[1100] overflow-hidden"
       aria-hidden="true"
     >
       <!-- backdrop dim -->
