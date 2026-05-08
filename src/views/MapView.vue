@@ -163,15 +163,15 @@ function updateMarkers() {
 
   for (const r of regionsWithCoordinates.value) {
     if (!r.coordinates) continue
-    const radius = Math.min(28, 8 + r.count * 2.4)
+    const radius = Math.min(20, 6 + r.count * 1.6)
 
     // Outer halo — soft glow, mimics the jellyfish bloom on home.
     const halo = L.circleMarker(r.coordinates, {
-      radius: radius + 6,
+      radius: radius + 3,
       color: 'transparent',
       weight: 0,
       fillColor: '#7dd3fc',
-      fillOpacity: 0.08,
+      fillOpacity: 0.07,
       interactive: false,
     })
     halo.addTo(regionLayer)
@@ -183,7 +183,7 @@ function updateMarkers() {
       weight: 1,
       opacity: 0.85,
       fillColor: '#3284e3',
-      fillOpacity: 0.45,
+      fillOpacity: 0.5,
       className: 'dream-marker',
     })
     marker.bindPopup(
@@ -422,7 +422,7 @@ onUnmounted(() => {
 }
 
 :deep(.dream-marker) {
-  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.55));
+  filter: drop-shadow(0 0 3px rgba(125, 211, 252, 0.5));
 }
 
 :deep(.leaflet-control-attribution) {

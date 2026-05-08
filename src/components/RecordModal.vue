@@ -114,7 +114,7 @@ async function submit() {
   >
     <div
       v-if="isOpen"
-      class="absolute inset-0 z-[1100] flex items-end justify-center bg-black/60 backdrop-blur-md"
+      class="fixed inset-0 z-[1100] flex items-end justify-center bg-black/60 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       @click.self="close"
@@ -130,7 +130,7 @@ async function submit() {
       >
         <div
           v-if="isOpen"
-          class="flex h-[85%] w-full flex-col gap-4 overflow-y-auto rounded-t-3xl border-t border-white/10 bg-deep-night/80 px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-5 backdrop-blur-2xl"
+          class="flex h-[92dvh] w-full max-w-[430px] flex-col gap-4 overflow-y-auto rounded-t-3xl border-t border-white/10 bg-deep-night/85 px-5 pb-[max(env(safe-area-inset-bottom),16px)] pt-5 backdrop-blur-2xl"
         >
           <header class="flex items-center justify-between">
             <h2 class="text-sm tracking-[0.3em] text-sky-100/80">どんな夢だった？</h2>

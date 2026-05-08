@@ -55,7 +55,7 @@ async function handleSave(payload: RecordSubmitPayload) {
 
 <template>
   <div class="relative flex flex-1 flex-col">
-    <div class="flex flex-1 flex-col overflow-y-auto pb-2">
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
       <slot />
     </div>
     <BottomNav :on-record="handleRecordButton" />
