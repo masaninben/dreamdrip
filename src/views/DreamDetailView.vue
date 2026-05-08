@@ -17,11 +17,13 @@ import {
   softDeleteDream,
   updateDreamContent,
 } from '@/lib/dreamsRepo'
+import { usePopularTags } from '@/composables/usePopularTags'
 
 const route = useRoute()
 const router = useRouter()
 const idRef = toRef(() => String(route.params.id ?? ''))
 const { dream, loading, notFound } = useDreamDoc(idRef)
+const { popularTags, ensureLoaded: ensurePopularTags } = usePopularTags()
 
 const isEditing = ref(false)
 const editText = ref('')
@@ -48,13 +50,22 @@ watch(
 const isPublic = computed(() => dream.value?.visibility === 'anonymous_public')
 const tagLimitReached = computed(() => editTags.value.length >= MAX_TAGS_PER_DREAM)
 
+const mergedTagSuggestions = computed(() => {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const t of [...popularTags.value, ...TAG_SUGGESTIONS_SEED]) {
+    if (seen.has(t)) continue
+    seen.add(t)
+    out.push(t)
+  }
+  return out
+})
+
 const tagCandidates = computed(() => {
   if (tagLimitReached.value) return []
   const q = normalizeTag(tagInput.value)
-  const base = q
-    ? TAG_SUGGESTIONS_SEED.filter((t) => t.includes(q))
-    : TAG_SUGGESTIONS_SEED
-  return base.filter((t) => !editTags.value.includes(t)).slice(0, 14)
+  const pool = mergedTagSuggestions.value.filter((t) => !editTags.value.includes(t))
+  return (q ? pool.filter((t) => t.includes(q)) : pool).slice(0, 14)
 })
 
 const charCount = computed(() => countCodePoints(editText.value))
@@ -73,6 +84,7 @@ function startEdit() {
   editEmotions.value = [...((dream.value.emotions ?? []) as Emotion[])]
   editTags.value = [...(dream.value.tags ?? [])]
   isEditing.value = true
+  void ensurePopularTags()
 }
 
 function cancelEdit() {

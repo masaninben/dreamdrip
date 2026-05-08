@@ -11,6 +11,7 @@ import {
   type RecordSubmitPayload,
 } from '@/lib/dreams'
 import { useRecordModal } from '@/composables/useRecordModal'
+import { usePopularTags } from '@/composables/usePopularTags'
 
 interface Props {
   onSave?: (payload: RecordSubmitPayload) => Promise<void> | void
@@ -18,6 +19,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const { isOpen, close } = useRecordModal()
+const { popularTags, ensureLoaded: ensurePopularTags } = usePopularTags()
 
 const text = ref('')
 const selectedEmotions = ref<Emotion[]>([])
@@ -35,13 +37,24 @@ const canSubmit = computed(() => {
   return text.value.trim().length > 0 || selectedEmotions.value.length > 0 || tags.value.length > 0
 })
 
+const mergedTagSuggestions = computed(() => {
+  // Server tags first (community-popular), then the seed list as fallback.
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const t of [...popularTags.value, ...TAG_SUGGESTIONS_SEED]) {
+    if (seen.has(t)) continue
+    seen.add(t)
+    out.push(t)
+  }
+  return out
+})
+
 const tagCandidates = computed(() => {
-  const query = normalizeTag(tagInput.value)
   if (tagLimitReached.value) return []
-  if (!query) return TAG_SUGGESTIONS_SEED.filter((t) => !tags.value.includes(t))
-  return TAG_SUGGESTIONS_SEED.filter(
-    (t) => t.includes(query) && !tags.value.includes(t),
-  )
+  const q = normalizeTag(tagInput.value)
+  const base = mergedTagSuggestions.value.filter((t) => !tags.value.includes(t))
+  if (!q) return base
+  return base.filter((t) => t.includes(q))
 })
 
 watch(isOpen, async (open) => {
@@ -53,6 +66,7 @@ watch(isOpen, async (open) => {
     visibility.value = 'anonymous_public'
     isSubmitting.value = false
     errorMessage.value = null
+    void ensurePopularTags()
     await nextTick()
     textareaRef.value?.focus()
   }

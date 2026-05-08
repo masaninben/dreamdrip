@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import DeepSeaBackground from '@/components/DeepSeaBackground.vue'
 import FloatingDreamCard from '@/components/FloatingDreamCard.vue'
 import Jellyfish from '@/components/Jellyfish.vue'
 import { provideJellyfishField } from '@/composables/useJellyfishField'
-import { usePublicDreams } from '@/composables/usePublicDreams'
+import { usePublicDreamsRandom } from '@/composables/usePublicDreamsRandom'
 import { useRecordModal } from '@/composables/useRecordModal'
 
 const { flashAll } = provideJellyfishField()
-const { dreams, loading } = usePublicDreams(10)
+const { dreams, loading, load } = usePublicDreamsRandom(100)
 const { open: openRecordModal } = useRecordModal()
+
+onMounted(() => {
+  void load()
+})
 
 const cycleIntervalMs = 3500
 const currentIndex = ref(0)
