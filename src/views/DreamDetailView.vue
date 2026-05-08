@@ -5,7 +5,10 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { useDreamDoc } from '@/composables/useDreamDoc'
 import {
   EMOTION_OPTIONS,
+  MAX_DREAM_TEXT_LENGTH,
+  MAX_TAGS_PER_DREAM,
   TAG_SUGGESTIONS_SEED,
+  countCodePoints,
   normalizeTag,
   type Emotion,
 } from '@/lib/dreams'
@@ -43,8 +46,10 @@ watch(
 )
 
 const isPublic = computed(() => dream.value?.visibility === 'anonymous_public')
+const tagLimitReached = computed(() => editTags.value.length >= MAX_TAGS_PER_DREAM)
 
 const tagCandidates = computed(() => {
+  if (tagLimitReached.value) return []
   const q = normalizeTag(tagInput.value)
   const base = q
     ? TAG_SUGGESTIONS_SEED.filter((t) => t.includes(q))
@@ -52,7 +57,7 @@ const tagCandidates = computed(() => {
   return base.filter((t) => !editTags.value.includes(t)).slice(0, 14)
 })
 
-const charCount = computed(() => editText.value.length)
+const charCount = computed(() => countCodePoints(editText.value))
 const canSave = computed(() => {
   if (isSaving.value) return false
   return (
@@ -82,12 +87,14 @@ function toggleEmotion(emotion: Emotion) {
 }
 
 function commitTagFromInput() {
+  if (tagLimitReached.value) return
   const tag = normalizeTag(tagInput.value)
   if (tag && !editTags.value.includes(tag)) editTags.value.push(tag)
   tagInput.value = ''
 }
 
 function addTagSuggestion(tag: string) {
+  if (tagLimitReached.value) return
   if (!editTags.value.includes(tag)) editTags.value.push(tag)
   tagInput.value = ''
 }
@@ -264,12 +271,12 @@ async function confirmDelete() {
           <div class="relative">
             <textarea
               v-model="editText"
-              maxlength="200"
+              :maxlength="MAX_DREAM_TEXT_LENGTH"
               rows="4"
               class="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-relaxed text-sky-50 placeholder:text-sky-100/30 focus:border-sky-300/60 focus:outline-none"
             />
             <span class="absolute bottom-2 right-3 text-[10px] tracking-wider text-sky-100/40">
-              {{ charCount }}/200
+              {{ charCount }}/{{ MAX_DREAM_TEXT_LENGTH }}
             </span>
           </div>
 
@@ -301,16 +308,21 @@ async function confirmDelete() {
                 type="text"
                 placeholder="# タグを入力"
                 class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-sky-50 placeholder:text-sky-100/30 focus:border-sky-300/60 focus:outline-none"
+                :disabled="tagLimitReached"
                 @keydown.enter.prevent="commitTagFromInput"
               />
               <button
                 type="button"
                 class="rounded-xl border border-white/10 bg-white/5 px-3 text-xs tracking-widest text-sky-100/70 transition hover:bg-white/10"
+                :disabled="tagLimitReached"
                 @click="commitTagFromInput"
               >
                 追加
               </button>
             </div>
+            <p class="mt-2 text-[10px] tracking-wider text-sky-100/40">
+              {{ editTags.length }}/{{ MAX_TAGS_PER_DREAM }}
+            </p>
             <div v-if="editTags.length" class="mt-3 flex flex-wrap gap-1.5">
               <button
                 v-for="t in editTags"

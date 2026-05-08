@@ -11,6 +11,16 @@ rules_version = '2';
 //  - announcements are admin-managed; clients can read published items and
 //    bootstrap the single "welcome" doc on first run.
 //  - userReadAnnouncements is owned by each user.
+//
+// Note on string sizes:
+//  Firestore rules' `string.size()` returns the number of UTF-8 bytes,
+//  not Unicode code points. The product spec is in characters (e.g.
+//  "200 文字"), so byte limits are sized at ~4× the character cap to
+//  accommodate worst-case multi-byte UTF-8 (Japanese ~3 bytes, emoji
+//  surrogate pairs up to 4). The client computes textLength via
+//  `Array.from(text).length` (code points) and is constrained
+//  separately so users can't fabricate a length that disagrees with the
+//  rendered character count.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -110,9 +120,9 @@ service cloud.firestore {
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['country'])
           || optionalString(request.resource.data.country, 2))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['region'])
-          || optionalString(request.resource.data.region, 30))
+          || optionalString(request.resource.data.region, 120))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['city'])
-          || optionalString(request.resource.data.city, 30));
+          || optionalString(request.resource.data.city, 120));
       allow delete: if false;
     }
 
@@ -126,10 +136,12 @@ service cloud.firestore {
         && request.resource.data.id == dreamId
         && request.resource.data.visibility in ['private', 'anonymous_public']
         && request.resource.data.text is string
-        && request.resource.data.text.size() <= 200
-        && request.resource.data.textLength == request.resource.data.text.size()
-        && isStringArray(request.resource.data.emotions, 9, 12)
-        && isStringArray(request.resource.data.tags, 10, 20);
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.textLength is int
+        && request.resource.data.textLength >= 0
+        && request.resource.data.textLength <= 200
+        && isStringArray(request.resource.data.emotions, 9, 48)
+        && isStringArray(request.resource.data.tags, 10, 80);
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid
@@ -145,13 +157,15 @@ service cloud.firestore {
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['visibility'])
           || isVisibility(request.resource.data.visibility))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['text'])
-          || (request.resource.data.text is string && request.resource.data.text.size() <= 200))
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['text', 'textLength'])
-          || request.resource.data.textLength == request.resource.data.text.size())
+          || (request.resource.data.text is string && request.resource.data.text.size() <= 1000))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['textLength'])
+          || (request.resource.data.textLength is int
+              && request.resource.data.textLength >= 0
+              && request.resource.data.textLength <= 200))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['emotions'])
-          || isStringArray(request.resource.data.emotions, 9, 12))
+          || isStringArray(request.resource.data.emotions, 9, 48))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tags'])
-          || isStringArray(request.resource.data.tags, 10, 20));
+          || isStringArray(request.resource.data.tags, 10, 80));
       allow delete: if false; // soft delete via update only
     }
 
@@ -201,14 +215,14 @@ service cloud.firestore {
         && request.resource.data.userIdHash.size() > 0
         && request.resource.data.userIdHash.size() <= 80
         && request.resource.data.textPreview is string
-        && request.resource.data.textPreview.size() <= 60
-        && isStringArray(request.resource.data.emotions, 9, 12)
-        && isStringArray(request.resource.data.tags, 10, 20)
+        && request.resource.data.textPreview.size() <= 240
+        && isStringArray(request.resource.data.emotions, 9, 48)
+        && isStringArray(request.resource.data.tags, 10, 80)
         && request.resource.data.dreamDate is string
         && request.resource.data.dreamDate.size() == 10
         && optionalString(request.resource.data.country, 2)
-        && optionalString(request.resource.data.region, 30)
-        && optionalString(request.resource.data.city, 30)
+        && optionalString(request.resource.data.region, 120)
+        && optionalString(request.resource.data.city, 120)
         && isLocationPrecision(request.resource.data.locationPrecision)
         && isCardType(request.resource.data.cardType)
         && request.resource.data.deletedAt == null;
@@ -235,11 +249,11 @@ service cloud.firestore {
           'deletedAt'
         ])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['textPreview'])
-          || (request.resource.data.textPreview is string && request.resource.data.textPreview.size() <= 60))
+          || (request.resource.data.textPreview is string && request.resource.data.textPreview.size() <= 240))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['emotions'])
-          || isStringArray(request.resource.data.emotions, 9, 12))
+          || isStringArray(request.resource.data.emotions, 9, 48))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tags'])
-          || isStringArray(request.resource.data.tags, 10, 20))
+          || isStringArray(request.resource.data.tags, 10, 80))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cardType'])
           || isCardType(request.resource.data.cardType));
       allow delete: if false;

@@ -2,7 +2,10 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import {
   EMOTION_OPTIONS,
+  MAX_DREAM_TEXT_LENGTH,
+  MAX_TAGS_PER_DREAM,
   TAG_SUGGESTIONS_SEED,
+  countCodePoints,
   normalizeTag,
   type Emotion,
   type RecordSubmitPayload,
@@ -25,7 +28,8 @@ const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-const charCount = computed(() => text.value.length)
+const charCount = computed(() => countCodePoints(text.value))
+const tagLimitReached = computed(() => tags.value.length >= MAX_TAGS_PER_DREAM)
 const canSubmit = computed(() => {
   if (isSubmitting.value) return false
   return text.value.trim().length > 0 || selectedEmotions.value.length > 0 || tags.value.length > 0
@@ -33,6 +37,7 @@ const canSubmit = computed(() => {
 
 const tagCandidates = computed(() => {
   const query = normalizeTag(tagInput.value)
+  if (tagLimitReached.value) return []
   if (!query) return TAG_SUGGESTIONS_SEED.filter((t) => !tags.value.includes(t))
   return TAG_SUGGESTIONS_SEED.filter(
     (t) => t.includes(query) && !tags.value.includes(t),
@@ -60,6 +65,7 @@ function toggleEmotion(emotion: Emotion) {
 }
 
 function commitTagFromInput() {
+  if (tagLimitReached.value) return
   const tag = normalizeTag(tagInput.value)
   if (!tag) return
   if (!tags.value.includes(tag)) tags.value.push(tag)
@@ -67,6 +73,7 @@ function commitTagFromInput() {
 }
 
 function addTagSuggestion(tag: string) {
+  if (tagLimitReached.value) return
   if (!tags.value.includes(tag)) tags.value.push(tag)
   tagInput.value = ''
 }
@@ -140,7 +147,7 @@ async function submit() {
             <textarea
               ref="textareaRef"
               v-model="text"
-              maxlength="200"
+              :maxlength="MAX_DREAM_TEXT_LENGTH"
               rows="4"
               placeholder="夢の断片を、ひと言だけでも..."
               class="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-relaxed text-sky-50 placeholder:text-sky-100/30 focus:border-sky-300/60 focus:outline-none"
@@ -178,16 +185,21 @@ async function submit() {
                 type="text"
                 placeholder="# タグを入力"
                 class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-sky-50 placeholder:text-sky-100/30 focus:border-sky-300/60 focus:outline-none"
+                :disabled="tagLimitReached"
                 @keydown.enter.prevent="commitTagFromInput"
               />
               <button
                 type="button"
                 class="rounded-xl border border-white/10 bg-white/5 px-3 text-xs tracking-widest text-sky-100/70 transition hover:bg-white/10"
+                :disabled="tagLimitReached"
                 @click="commitTagFromInput"
               >
                 追加
               </button>
             </div>
+            <p class="mt-2 text-[10px] tracking-wider text-sky-100/40">
+              {{ tags.length }}/{{ MAX_TAGS_PER_DREAM }}
+            </p>
 
             <div v-if="tags.length" class="mt-3 flex flex-wrap gap-1.5">
               <button

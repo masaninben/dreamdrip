@@ -8,7 +8,11 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { CardType, UserDoc } from '@/types'
-import type { RecordSubmitPayload } from './dreams'
+import {
+  countCodePoints,
+  truncateCodePoints,
+  type RecordSubmitPayload,
+} from './dreams'
 
 const DREAM_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Tokyo',
@@ -38,8 +42,8 @@ function decideCardType(payload: { text: string; tags: string[]; emotions: strin
 }
 
 function buildTextPreview(text: string): string {
-  if (text.length <= 60) return text
-  return text.slice(0, 57) + '...'
+  if (countCodePoints(text) <= 60) return text
+  return truncateCodePoints(text, 57) + '...'
 }
 
 export async function saveDream(
@@ -66,7 +70,7 @@ export async function saveDream(
     id: dreamId,
     userId: user.uid,
     text: payload.text,
-    textLength: payload.text.length,
+    textLength: countCodePoints(payload.text),
     emotions: payload.emotions,
     tags: payload.tags,
     visibility: payload.visibility,
@@ -137,7 +141,7 @@ export async function updateDreamContent(
     doc(db, 'dreams', dreamId),
     {
       text: patch.text,
-      textLength: patch.text.length,
+      textLength: countCodePoints(patch.text),
       emotions: patch.emotions,
       tags: patch.tags,
       updatedAt: now,
